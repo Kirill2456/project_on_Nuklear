@@ -5,10 +5,12 @@
 #include <string.h>
 #include <winsock2.h>
 #include <windows.h>
+
 #include "nuklear_cross.h"
 
 #define PORT 8080
 #define BUFFER_SIZE 1024
+#define NUMBER_SIZE (2 * sizeof(float))
 //#include <net/ethernet.h>
 #define INITIAL_SIZE 6
 static const float ratio[] = {120, 150};
@@ -30,8 +32,9 @@ int func(struct nk_context *ctx)
 // Сокет
 //--------------------------------------------
  WSADATA wsaData;
-    SOCKET sock;
-    struct sockaddr_in server_addr;
+    SOCKET sockfd;
+    struct sockaddr_in server_addr, client_addr;
+    int addr_len = sizeof(client_addr);
     float numbers[2];
     float result_array[BUFFER_SIZE];
 
@@ -39,20 +42,40 @@ int func(struct nk_context *ctx)
         error_exit("WSAStartup failed");
     }
 
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
+      // Создаем UDP сокет
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET) {
+        printf("Ошибка при создании сокета. Код ошибки: %d\n", WSAGetLastError());
         WSACleanup();
-        error_exit("Socket creation failed");
+        return EXIT_FAILURE;
     }
 
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(PORT);
-    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    // Настраиваем адрес сервера
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET; // IPv4
+    server_addr.sin_addr.s_addr = INADDR_ANY; // Принимаем сообщения с любого IP
+    server_addr.sin_port = htons(PORT); // Указываем порт
 
-    if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
-        closesocket(sock);
+    // Привязываем сокет к адресу
+    if (bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
+        printf("Ошибка при привязке сокета. Код ошибки: %d\n", WSAGetLastError());
+        closesocket(sockfd);
         WSACleanup();
-        error_exit("Connect failed");
+        return EXIT_FAILURE;
     }
+    // if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
+    //     WSACleanup();
+    //     error_exit("Socket creation failed");
+    // }
+
+    // server_addr.sin_family = AF_INET;
+    // server_addr.sin_port = htons(PORT);
+    // server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    // if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
+    //     closesocket(sockfd);
+    //     WSACleanup();
+    //     error_exit("Connect failed");
+    // }
 //--------------------------------------------
 // Сокет конец
 //--------------------------------------------
@@ -104,17 +127,19 @@ int func(struct nk_context *ctx)
             numbers[0] = Altitude;
             numbers[1] = Temperature;
             // отправляем на сервер 2 значения 
-            send(sock, (char*)numbers, sizeof(numbers), 0);
+            sendto(sockfd, numbers, NUMBER_SIZE, 0,
+               (struct sockaddr *)&client_addr, addr_len);
+            //send(sockfd, (char*)numbers, sizeof(numbers), 0);
         }
     if (!flag_pusk)
     {
         if (nk_button_label(ctx, "Start"))
         {
             // принимаем дистанцию из сокета
-            int bytes_received = recv(sock, (char*)result_array, sizeof(result_array), 0);
-            if (bytes_received == sizeof(result_array)) {
-        printf("Received array from server:\n");
-
+            int bytes_received = recv(sockfd, (char*)result_array, sizeof(result_array), 0);
+            int n = recvfrom(sockfd, result_array, BUFFER_SIZE, 0,
+                         (struct sockaddr *)&client_addr, &addr_len);
+        ///----------------------------------------------
             float max = result_array[0], min = result_array[0];
             for (int i = 0; i < BUFFER_SIZE; i++)
             {
@@ -162,12 +187,10 @@ int func(struct nk_context *ctx)
             {
                 line_index = -1;
             }
-           // nk_tree_pop(ctx); 
-    } else {
-        printf("Failed to receive data from server\n");
-    }
+           // nk_tree_pop(ctx);  
+    
             flag_pusk = 1;
-                closesocket(sock);
+                closesocket(sockfd);
                  WSACleanup();
         }
     }
