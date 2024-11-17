@@ -29,3 +29,6 @@ $(PREF_O)%.o : $(PREF_C)%.c $(HEADERS)
 
 clean :
 	rm $(TARGET) $(PREF_O)*.o
+
+release: CFLAGS += -DNDEBUG
+release: clean all
