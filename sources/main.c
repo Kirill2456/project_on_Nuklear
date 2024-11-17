@@ -15,6 +15,10 @@
 #include "main.h"
 //#include <SDL2/SDL.h>
 //#include <SDL2/SDL_opengl.h>
+#include <string.h>
+#include <winsock2.h>
+#include <windows.h>
+
 
 #define NK_IMPLEMENTATION
 #define NK_INCLUDE_FIXED_TYPES
@@ -36,10 +40,45 @@ int op = EASY;
 float value = 0.6f;
 int i =  20;
 
+WSADATA wsaData;
+SOCKET sockfd;
+struct sockaddr_in server_addr, client_addr;
+int addr_len = sizeof(client_addr);
 
 int
 main(int argc, char *argv[])
 {
+    //--------------------------------------------
+// Сокет
+//--------------------------------------------
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        error_exit("WSAStartup failed");
+    }
+
+      // Создаем UDP сокет
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET) {
+        printf("error creating socket. error code: %d\n", WSAGetLastError());
+        WSACleanup();
+        return EXIT_FAILURE;
+    }
+
+    // Настраиваем адрес сервера
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET; // IPv4
+    server_addr.sin_addr.s_addr = INADDR_ANY; // Принимаем сообщения с любого IP
+    server_addr.sin_port = htons(PORT); // Указываем порт
+
+    // Привязываем сокет к адресу
+    if (bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
+        printf("Error while binding socket. Error code: %d\n", WSAGetLastError()); // ошибка при привязке сокета
+        closesocket(sockfd);
+        WSACleanup();
+        return EXIT_FAILURE;
+    }
+//--------------------------------------------
+// Сокет конец
+//--------------------------------------------
+
     /* Platform */
     SDL_Window *win;
     SDL_GLContext glContext;

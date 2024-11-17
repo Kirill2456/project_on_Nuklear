@@ -5,13 +5,10 @@
 #include <string.h>
 #include <winsock2.h>
 #include <windows.h>
-
 #include "nuklear_cross.h"
 
-#define PORT 8080
-#define BUFFER_SIZE 1024
-#define NUMBER_SIZE (2 * sizeof(float))
-//#include <net/ethernet.h>
+#include "main.h"
+
 #define INITIAL_SIZE 6
 static const float ratio[] = {120, 150};
 static char buffer_1[64]; // высота над уровнем моря
@@ -19,66 +16,22 @@ static char buffer_2[64]; // температура
 
 static int buffer_1_len;
 static int buffer_2_len;
-float dist[BUFFER_SIZE];
+float dist[BUFFER_SIZE]; //BUFFER_SIZE 1024
 int flag_pusk = 0;
 void error_exit(const char *msg) {
     perror(msg);
     exit(EXIT_FAILURE);
 }
+float numbers[2];
+float result_array[BUFFER_SIZE]; //BUFFER_SIZE 1024
+
+extern SOCKET sockfd;
+extern struct sockaddr_in server_addr, client_addr;
+extern int addr_len;
 
 int func(struct nk_context *ctx)
 {
-//--------------------------------------------
-// Сокет
-//--------------------------------------------
- WSADATA wsaData;
-    SOCKET sockfd;
-    struct sockaddr_in server_addr, client_addr;
-    int addr_len = sizeof(client_addr);
-    float numbers[2];
-    float result_array[BUFFER_SIZE];
 
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        error_exit("WSAStartup failed");
-    }
-
-      // Создаем UDP сокет
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET) {
-        printf("Ошибка при создании сокета. Код ошибки: %d\n", WSAGetLastError());
-        WSACleanup();
-        return EXIT_FAILURE;
-    }
-
-    // Настраиваем адрес сервера
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET; // IPv4
-    server_addr.sin_addr.s_addr = INADDR_ANY; // Принимаем сообщения с любого IP
-    server_addr.sin_port = htons(PORT); // Указываем порт
-
-    // Привязываем сокет к адресу
-    if (bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
-        printf("Ошибка при привязке сокета. Код ошибки: %d\n", WSAGetLastError());
-        closesocket(sockfd);
-        WSACleanup();
-        return EXIT_FAILURE;
-    }
-    // if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
-    //     WSACleanup();
-    //     error_exit("Socket creation failed");
-    // }
-
-    // server_addr.sin_family = AF_INET;
-    // server_addr.sin_port = htons(PORT);
-    // server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-
-    // if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
-    //     closesocket(sockfd);
-    //     WSACleanup();
-    //     error_exit("Connect failed");
-    // }
-//--------------------------------------------
-// Сокет конец
-//--------------------------------------------
     static int show_menu = nk_true;
     static int titlebar = nk_true;
     static int border = nk_true;
@@ -190,8 +143,7 @@ int func(struct nk_context *ctx)
            // nk_tree_pop(ctx);  
     
             flag_pusk = 1;
-                closesocket(sockfd);
-                 WSACleanup();
+               
         }
     }
     else
@@ -202,6 +154,8 @@ int func(struct nk_context *ctx)
         }
     }
     }
+    closesocket(sockfd);
+    WSACleanup();
     nk_end(ctx);
     return !nk_window_is_closed(ctx, "Func");
 }
