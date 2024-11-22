@@ -35,10 +35,6 @@
 
 
 
-enum {EASY, HARD};
-int op = EASY;
-float value = 0.6f;
-int i =  20;
 
 WSADATA wsaData;
 SOCKET sockfd;
@@ -48,11 +44,11 @@ int addr_len = sizeof(client_addr);
 int
 main(int argc, char *argv[])
 {
-    //--------------------------------------------
+//--------------------------------------------
 // Сокет
 //--------------------------------------------
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        error_exit("WSAStartup failed");
+        printf("main::55 WSAStartup failed");
     }
 
       // Создаем UDP сокет
@@ -66,7 +62,7 @@ main(int argc, char *argv[])
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET; // IPv4
     server_addr.sin_addr.s_addr = INADDR_ANY; // Принимаем сообщения с любого IP
-    server_addr.sin_port = htons(PORT); // Указываем порт
+    server_addr.sin_port = htons(PORT); // Указываем порт 8080
 
     // Привязываем сокет к адресу
     if (bind(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
@@ -75,9 +71,7 @@ main(int argc, char *argv[])
         WSACleanup();
         return EXIT_FAILURE;
     }
-//--------------------------------------------
-// Сокет конец
-//--------------------------------------------
+
 
     /* Platform */
     SDL_Window *win;
@@ -127,22 +121,6 @@ main(int argc, char *argv[])
 
         /* -------------- EXAMPLES ---------------- */
         func(ctx);
-        if (nk_begin(ctx, "Show", nk_rect(50, 50, 220, 220),
-    NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_CLOSABLE)) {
-    /* fixed widget pixel width */
-    nk_layout_row_static(ctx, 30, 80, 1);
-    if (nk_button_label(ctx, "button")) {
-        /* event handling */
-    }
-
-    /* fixed widget window ratio width */
-    nk_layout_row_dynamic(ctx, 30, 2);
-    if (nk_option_label(ctx, "easy", op == EASY)) op = EASY;
-    if (nk_option_label(ctx, "hard", op == HARD)) op = HARD;
-
- 
-}
-nk_end(ctx);
         /* ----------------------------------------- */
 
         /* Draw */
@@ -158,6 +136,12 @@ nk_end(ctx);
         nk_sdl_render(NK_ANTI_ALIASING_ON);
         SDL_GL_SwapWindow(win);
     }
+//--------------------------------------------
+// Закрываем Сокет
+//--------------------------------------------
+    closesocket(sockfd);
+    WSACleanup();
+
 
     cleanup:
     nk_sdl_shutdown();

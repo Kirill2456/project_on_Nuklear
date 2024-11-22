@@ -2,7 +2,7 @@
 #define MAIN_H
 
 #define PORT 8080
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 100
 #define NUMBER_SIZE (2 * sizeof(float))
 
 #include <stdio.h>
