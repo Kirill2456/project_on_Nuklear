@@ -7,6 +7,7 @@
 #include <windows.h>
 #include "nuklear_cross.h"
 
+
 #include "main.h"
 
 #define INITIAL_SIZE 6
@@ -33,6 +34,7 @@ int flag_first_start = 1;
 float value;
 int current_index = 0;
 int templ = 0;
+
 
 int func(struct nk_context *ctx)
 {
@@ -84,7 +86,7 @@ int func(struct nk_context *ctx)
         nk_edit_string(ctx, NK_EDIT_SIMPLE, buffer_2, &buffer_2_len, 64, nk_filter_float);
 
         nk_layout_row_static(ctx, 30, 100, 3);
-        if (nk_button_label(ctx, "Change Data!"))
+        if (nk_button_label(ctx, "Send Data!"))
         {
             fprintf(stdout, "Button pressed!\n");
             Altitude = atof(buffer_1);
@@ -103,7 +105,7 @@ int func(struct nk_context *ctx)
         struct nk_rect bounds;
         if (!flag_pusk)
         {
-            
+
             if (nk_button_label(ctx, "Start"))
             {
                 flag_pusk = 1;
@@ -111,21 +113,29 @@ int func(struct nk_context *ctx)
         }
         else
         {
-             // принимаем дистанцию из сокета
-                // int bytes_received = recv(sockfd, (char*)result_array, sizeof(result_array), 0);
-                // int n = recvfrom(sockfd, result_array, BUFFER_SIZE, 0,\
+            // принимаем дистанцию из сокета
+            // int bytes_received = recv(sockfd, (char*)result_array, sizeof(result_array), 0);
+            // int n = recvfrom(sockfd, result_array, BUFFER_SIZE, 0,\
                          (struct sockaddr *)&client_addr, &addr_len);
-                //int bytes_received = recvfrom(sockfd, (char*)&value, sizeof(float), 0,(struct sockaddr *)&client_addr, &addr_len);
+            // int bytes_received = recvfrom(sockfd, (char*)&value, sizeof(float), 0,(struct sockaddr *)&client_addr, &addr_len);
 
-                int bytes_received = recv(sockfd, (char*)&value, sizeof(float), 0);
-                if (bytes_received < 0)
-                {
-                    perror("recv failed");
-                    return 1; // Завершение программы при ошибке
-                }
-                ///----------------------------------------------
-                if (templ == 1000)
-                {
+            int bytes_received = recv(sockfd, (char *)&value, sizeof(float), 0);
+            if (bytes_received < 0)
+            {
+                printf("recv failed func.c :: 125\n");
+                //perror("recv failed");
+            }
+            else if (bytes_received == 0)
+            {
+                printf("Connection closed by the peer\n");
+            }
+            else
+            {
+                printf("Received %d bytes\n", bytes_received);
+            }
+            ///----------------------------------------------
+            if (templ == 1000)
+            {
                 if (current_index >= BUFFER_SIZE)
                 {
                     // Сдвигаем элементы влево на одну позицию
@@ -140,51 +150,51 @@ int func(struct nk_context *ctx)
                     current_index++;
                 }
                 templ = 0;
-                }
-                templ ++;
-                
-                for (int i = 0; i < BUFFER_SIZE; i++)
+            }
+            templ++;
+
+            for (int i = 0; i < BUFFER_SIZE; i++)
+            {
+                if (result_array[i] > max)
                 {
-                    if (result_array[i] > max)
+                    max = result_array[i];
+                }
+                if (result_array[i] < min)
+                {
+                    min = result_array[i];
+                }
+            }
+            /* line chart */
+            index = -1;
+            nk_layout_row_dynamic(ctx, 150, 1);
+            bounds = nk_widget_bounds(ctx);
+            if (nk_chart_begin(ctx, NK_CHART_LINES, BUFFER_SIZE, min, max + 1))
+            {
+                for (i = 0; i < BUFFER_SIZE; ++i)
+                {
+                    nk_flags res = nk_chart_push(ctx, result_array[i]);
+                    if (res & NK_CHART_HOVERING)
+                        index = (int)i;
+                    if (res & NK_CHART_CLICKED)
                     {
-                        max = result_array[i];
-                    }
-                    if (result_array[i] < min)
-                    {
-                        min = result_array[i];
+                        line_index = (int)i;
                     }
                 }
-                /* line chart */
-                index = -1;
-                nk_layout_row_dynamic(ctx, 150, 1);
-                bounds = nk_widget_bounds(ctx);
-                if (nk_chart_begin(ctx, NK_CHART_LINES, BUFFER_SIZE, min, max + 1))
-                {
-                    for (i = 0; i < BUFFER_SIZE; ++i)
-                    {
-                        nk_flags res = nk_chart_push(ctx, result_array[i]);
-                        if (res & NK_CHART_HOVERING)
-                            index = (int)i;
-                        if (res & NK_CHART_CLICKED)
-                        {
-                            line_index = (int)i;
-                        }
-                    }
-                    nk_chart_end(ctx);
-                }
-                if (index != -1)
-                    nk_tooltipf(ctx, "Value: %f", result_array[index]);
-                if (line_index != -1)
-                {
-                    nk_layout_row_dynamic(ctx, 20, 1);
-                    nk_labelf(ctx, NK_TEXT_LEFT, "Selected value: %f", result_array[line_index]);
-                }
-                nk_layout_row_static(ctx, 30, 160, 1);
-                if (nk_button_label(ctx, "Delete Selected value"))
-                {
-                    line_index = -1;
-                }
-                // nk_tree_pop(ctx);
+                nk_chart_end(ctx);
+            }
+            if (index != -1)
+                nk_tooltipf(ctx, "Value: %f", result_array[index]);
+            if (line_index != -1)
+            {
+                nk_layout_row_dynamic(ctx, 20, 1);
+                nk_labelf(ctx, NK_TEXT_LEFT, "Selected value: %f", result_array[line_index]);
+            }
+            nk_layout_row_static(ctx, 30, 160, 1);
+            if (nk_button_label(ctx, "Delete Selected value"))
+            {
+                line_index = -1;
+            }
+            // nk_tree_pop(ctx);
             if (nk_button_label(ctx, "Stop"))
             {
                 flag_pusk = 0;
