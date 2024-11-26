@@ -34,6 +34,7 @@ float value;
 int current_index = 0;
 int templ = 0;
 int flag_sock = 1;
+int line_index = -1;
 
 int func(struct nk_context *ctx)
 {
@@ -97,49 +98,15 @@ int func(struct nk_context *ctx)
                    (struct sockaddr *)&client_addr, addr_len);
             // send(sockfd, (char*)numbers, sizeof(numbers), 0);
         }
-        int line_index = -1;
+        // int line_index = -1;
         int i;
         int index = -1;
         float max = result_array[0], min = result_array[0];
         struct nk_rect bounds;
-        if (!flag_pusk)
-        {
-
-            if (nk_button_label(ctx, "Start"))
-            {
-                flag_pusk = 1;
-            }
-        }
-        else
-        {
-            // принимаем дистанцию из сокета
-            // int bytes_received = recv(sockfd, (char*)result_array, sizeof(result_array), 0);
-            // int n = recvfrom(sockfd, result_array, BUFFER_SIZE, 0,\
-                         (struct sockaddr *)&client_addr, &addr_len);
-            // int bytes_received = recvfrom(sockfd, (char*)&value, sizeof(float), 0,(struct sockaddr *)&client_addr, &addr_len);
-
-            int bytes_received = recv(sockfd, (char *)&value, sizeof(float), 0);
-            if (bytes_received < 0)
-            {
-                if (flag_sock == 1)
-                {
-                    flag_sock = 0;
-                    printf("recv failed func.c :: 125\n");
-                }
-                // perror("recv failed");
-            }
-            else if (bytes_received == 0)
-            {
-                printf("Connection closed by the peer\n");
-                flag_sock = 1;
-            }
-            else
-            {
-                // printf("Received %d bytes\n", bytes_received);
-                flag_sock = 1;
-            }
-            ///----------------------------------------------
-            if (templ == 1000)
+        //----------------------------------------------------------------------------------------------------
+        //  График 
+        //----------------------------------------------------------------------------------------------------
+         if (templ == 1000)
             {
                 if (current_index >= BUFFER_SIZE)
                 {
@@ -187,6 +154,7 @@ int func(struct nk_context *ctx)
                 }
                 nk_chart_end(ctx);
             }
+   
             if (index != -1)
                 nk_tooltipf(ctx, "Value: %f", result_array[index]);
             if (line_index != -1)
@@ -199,7 +167,107 @@ int func(struct nk_context *ctx)
             {
                 line_index = -1;
             }
-            // nk_tree_pop(ctx);
+        //----------------------------------------------------------------------------------------------------
+        //  Кнопка Старт/Стоп для приёма данных из сокета
+        //----------------------------------------------------------------------------------------------------
+        if (!flag_pusk)
+        {
+
+            if (nk_button_label(ctx, "Start"))
+            {
+                flag_pusk = 1;
+            }
+        }
+        else
+        {
+            // принимаем дистанцию из сокета
+            // int bytes_received = recv(sockfd, (char*)result_array, sizeof(result_array), 0);
+            // int n = recvfrom(sockfd, result_array, BUFFER_SIZE, 0,\
+                         (struct sockaddr *)&client_addr, &addr_len);
+            // int bytes_received = recvfrom(sockfd, (char*)&value, sizeof(float), 0,(struct sockaddr *)&client_addr, &addr_len);
+
+            int bytes_received = recv(sockfd, (char *)&value, sizeof(float), 0);
+            if (bytes_received < 0)
+            {
+                if (flag_sock == 1)
+                {
+                    flag_sock = 0;
+                    printf("recv failed func.c :: 125\n");
+                }
+                // perror("recv failed");
+            }
+            else if (bytes_received == 0)
+            {
+                printf("Connection closed by the peer\n");
+                flag_sock = 1;
+            }
+            else
+            {
+                // printf("Received %d bytes\n", bytes_received);
+                flag_sock = 1;
+            }
+            ///----------------------------------------------
+            // if (templ == 1000)
+            // {
+            //     if (current_index >= BUFFER_SIZE)
+            //     {
+            //         // Сдвигаем элементы влево на одну позицию
+            //         memmove(result_array, result_array + 1, (BUFFER_SIZE - 1) * sizeof(float));
+            //         // Записываем новое значение в последнюю ячейку
+            //         result_array[BUFFER_SIZE - 1] = value;
+            //     }
+            //     else
+            //     {
+            //         // Если буфер еще не переполнен, просто добавляем новое значение
+            //         result_array[current_index] = value;
+            //         current_index++;
+            //     }
+            //     templ = 0;
+            // }
+            // templ++;
+
+            // for (int i = 0; i < BUFFER_SIZE; i++)
+            // {
+            //     if (result_array[i] > max)
+            //     {
+            //         max = result_array[i];
+            //     }
+            //     if (result_array[i] < min)
+            //     {
+            //         min = result_array[i];
+            //     }
+            // }
+            // /* line chart */
+            // index = -1;
+            // nk_layout_row_dynamic(ctx, 150, 1);
+            // bounds = nk_widget_bounds(ctx);
+            // if (nk_chart_begin(ctx, NK_CHART_LINES, BUFFER_SIZE, min, max + 1))
+            // {
+            //     for (i = 0; i < BUFFER_SIZE; ++i)
+            //     {
+            //         nk_flags res = nk_chart_push(ctx, result_array[i]);
+            //         if (res & NK_CHART_HOVERING)
+            //             index = (int)i;
+            //         if (res & NK_CHART_CLICKED)
+            //         {
+            //             line_index = (int)i;
+            //         }
+            //     }
+            //     nk_chart_end(ctx);
+            // }
+            // if (index != -1)
+            //     nk_tooltipf(ctx, "Value: %f", result_array[index]);
+            // if (line_index != -1)
+            // {
+            //     nk_layout_row_dynamic(ctx, 20, 1);
+            //     nk_labelf(ctx, NK_TEXT_LEFT, "Selected value: %f", result_array[line_index]);
+            // }
+            // nk_layout_row_static(ctx, 30, 160, 1);
+            // if (nk_button_label(ctx, "Delete Selected value"))
+            // {
+            //     line_index = -1;
+            // }
+            // // nk_tree_pop(ctx);
             if (nk_button_label(ctx, "Stop"))
             {
                 flag_pusk = 0;

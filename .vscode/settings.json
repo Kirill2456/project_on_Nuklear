@@ -62,6 +62,8 @@
     "nuklear.h": "c",
     "sdl_opengl.h": "c",
     "math.h": "c",
-    "nuklear_sdl_gl2.h": "c"
+    "nuklear_sdl_gl2.h": "c",
+    "chrono": "c",
+    "variant": "c"
   }
 }
