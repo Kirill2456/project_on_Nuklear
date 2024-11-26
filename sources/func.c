@@ -7,7 +7,6 @@
 #include <windows.h>
 #include "nuklear_cross.h"
 
-
 #include "main.h"
 
 #define INITIAL_SIZE 6
@@ -34,7 +33,7 @@ int flag_first_start = 1;
 float value;
 int current_index = 0;
 int templ = 0;
-
+int flag_sock = 1;
 
 int func(struct nk_context *ctx)
 {
@@ -122,16 +121,22 @@ int func(struct nk_context *ctx)
             int bytes_received = recv(sockfd, (char *)&value, sizeof(float), 0);
             if (bytes_received < 0)
             {
-                printf("recv failed func.c :: 125\n");
-                //perror("recv failed");
+                if (flag_sock == 1)
+                {
+                    flag_sock = 0;
+                    printf("recv failed func.c :: 125\n");
+                }
+                // perror("recv failed");
             }
             else if (bytes_received == 0)
             {
                 printf("Connection closed by the peer\n");
+                flag_sock = 1;
             }
             else
             {
-                printf("Received %d bytes\n", bytes_received);
+                // printf("Received %d bytes\n", bytes_received);
+                flag_sock = 1;
             }
             ///----------------------------------------------
             if (templ == 1000)
